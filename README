@@ -1,0 +1,19 @@
+A quick and dirty hack to report the blocks of a PostgreSQL data directory
+that are currently in the operating system page cache.  The output shows the
+database OID, relfilenode, block number and number of OS pages (1 or 2, since
+only half an 8KB page might be present).
+
+Currently OS page size is assumed to be the traditional 4KB, likewise 8KB for
+PG, and tablespaces and non-main forks are ignored.
+
+Here's a way to see how many pages are double buffered, that is, occupying
+both PG and OS memory:
+
+create temp table kernelcache
+  (reldatabase oid, relfilenode oid, relblocknumber int, pages int);
+
+copy kernelcache from program '/path/to/pgdata_mincore /path/to/pgdata';
+
+select count(*)
+ from pg_buffercache
+ join kernelcache using (reldatabase, relfilenode, relblocknumber);
